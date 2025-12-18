@@ -7,6 +7,9 @@ local UserInputService = game:GetService("UserInputService")
 local lightingService = game:GetService("Lighting")
 local noclipEnabled = false
 
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
 local teamCheckEnabled = false 
 local espTeamCheckEnabled = false -- controls ESP-only team check
 
@@ -76,15 +79,16 @@ local flyKeys = {
 local aimbotEnabled = false
 local lockPart = "Head"
 local fov = 90
+
 local toggleKey = Enum.KeyCode.Q
+
+local keyGuiVisible = false
+
 local currentTarget = nil
 local smoothnessValue = 0.6
 local fovCircleEnabled = false
 local showFOVCircle = false
-
-local silentAimEnabled = false
-local silentAimFOV = 90 -- adjust for client FOV
-local silentAimLockPart = "Head"
+local noKeybindEnabled = false
 
 local fullbrightEnabled = false
 local infiniteJumpEnabled = false
@@ -97,7 +101,7 @@ local YELLOW = Color3.fromRGB(255, 255, 0)
 local RED = Color3.fromRGB(255, 0, 0)
 
 local Window = Rayfield:CreateWindow({
-   Name = "Nexo Hub V1.4",
+   Name = "Nexo Hub V1.5",
    LoadingTitle = "Nexo Hub",
    LoadingSubtitle = "by nexoscripts (discord)",
    Theme = "Ocean",
@@ -289,7 +293,7 @@ function ESP:RemoveLine(player)
     end
 end
 
--- Aimbot Functions
+-- Aimbot Functionz
 local function getClosest()
     local camera = workspace.CurrentCamera
     local closestTarget = nil
@@ -361,16 +365,154 @@ local function lockOntoTarget(target)
     end
 end
 
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == aimbotHoldKey then
+        aimbotKeyDown = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.KeyCode == aimbotHoldKey then
+        aimbotKeyDown = false
+    end
+end)
+
 local AimbotSection = MainTab:CreateSection("Aimbot")
 
 -- Create UI Elements
 MainTab:CreateToggle({
-   Name = "Aimbot (Q)",
+   Name = "Aimbot",
    CurrentValue = false,
    Flag = "AimbotToggle",
    Callback = function(Value)
       aimbotEnabled = Value
    end,
+})
+
+-- =========================
+-- CUSTOM KEYBIND GUI
+-- =========================
+
+local keyGuiVisible = false
+local waitingForKey = false
+
+local keyGui = Instance.new("ScreenGui")
+keyGui.Name = "AimbotKeyGui"
+keyGui.ResetOnSpawn = false
+keyGui.Parent = playerGui
+keyGui.Enabled = false
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 220, 0, 110)
+frame.Position = UDim2.new(0.25, 0, 0.25, 0) -- start around 25% from left and top
+frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+frame.BorderSizePixel = 0
+frame.Parent = keyGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = frame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundTransparency = 1
+title.Text = "Aimbot Keybind"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 16
+title.Font = Enum.Font.GothamBold
+title.Parent = frame
+
+local keyLabel = Instance.new("TextLabel")
+keyLabel.Size = UDim2.new(1, -10, 0, 25)
+keyLabel.Position = UDim2.new(0, 5, 0, 35)
+keyLabel.BackgroundTransparency = 1
+keyLabel.Text = "Current Key: Q"
+keyLabel.TextColor3 = Color3.new(1, 1, 1)
+keyLabel.TextSize = 14
+keyLabel.Font = Enum.Font.Gotham
+keyLabel.Parent = frame
+
+local changeButton = Instance.new("TextButton")
+changeButton.Size = UDim2.new(1, -20, 0, 30)
+changeButton.Position = UDim2.new(0, 10, 0, 70)
+changeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+changeButton.Text = "Change Key"
+changeButton.TextColor3 = Color3.new(1, 1, 1)
+changeButton.TextSize = 14
+changeButton.Font = Enum.Font.Gotham
+changeButton.Parent = frame
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 6)
+btnCorner.Parent = changeButton
+
+-- =========================
+-- MOVABLE GUI LOGIC
+-- =========================
+
+local dragging = false
+local dragInput, dragStart, startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+                               startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+frame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+
+-- =========================
+-- KEY LISTENING
+-- =========================
+
+changeButton.MouseButton1Click:Connect(function()
+    waitingForKey = true
+    keyLabel.Text = "Press any key..."
+end)
+
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if waitingForKey and input.UserInputType == Enum.UserInputType.Keyboard then
+        toggleKey = input.KeyCode
+        keyLabel.Text = "Current Key: " .. toggleKey.Name
+        waitingForKey = false
+    end
+end)
+
+-- =========================
+-- RAYFIELD BUTTON
+-- =========================
+
+MainTab:CreateButton({
+    Name = "Change Aimbot Keybind",
+    Callback = function()
+        keyGuiVisible = not keyGuiVisible
+        keyGui.Enabled = keyGuiVisible
+    end,
 })
 
 MainTab:CreateSlider({
@@ -910,6 +1052,7 @@ MovementTab:CreateToggle({
     end,
 })
 
+-- main aimbot loop
 -- Main Aimbot Loop
 RunService.RenderStepped:Connect(function()
     if aimbotEnabled then
