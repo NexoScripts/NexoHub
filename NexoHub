@@ -97,7 +97,7 @@ local YELLOW = Color3.fromRGB(255, 255, 0)
 local RED = Color3.fromRGB(255, 0, 0)
 
 local Window = Rayfield:CreateWindow({
-   Name = "Nexo Hub V1.3",
+   Name = "Nexo Hub V1.4",
    LoadingTitle = "Nexo Hub",
    LoadingSubtitle = "by nexoscripts (discord)",
    Theme = "Ocean",
@@ -128,8 +128,8 @@ local MainTab = Window:CreateTab("Main", nil)
 local AwarenessTab = Window:CreateTab("Awareness", nil)
 local MovementTab = Window:CreateTab("Movement", nil)
 local ChecksTab = Window:CreateTab("Checks", nil)
-local FunctionsTab = Window:CreateTab("Functions")
 local FunTab = Window:CreateTab("Fun", nil)
+local RivalsTab = Window:CreateTab("Rivals")
 
 -- FOV Circle Setup
 local FOVCircle = Drawing.new("Circle")
@@ -1256,12 +1256,12 @@ function stopJerkOff()
     end
 end
 
-local MatchmakingSection = FunctionsTab:CreateSection("Matchmaking")
+local MatchmakingSection = RivalsTab:CreateSection("Matchmaking")
 
 local defaultQueue = "1v1"  -- default queue mode
 local selectedQueueMode = defaultQueue
 
-local queueDropdown = FunctionsTab:CreateDropdown({
+local queueDropdown = RivalsTab:CreateDropdown({
     Name = "Queue Mode",
     Options = {"1v1", "2v2", "3v3", "4v4", "5v5"},
     CurrentOption = {defaultQueue}, -- <-- set default here
@@ -1292,7 +1292,7 @@ task.spawn(function()
 end)
 
 -- Join Queue Button
-FunctionsTab:CreateButton({
+RivalsTab:CreateButton({
     Name = "Join Selected Queue",
     Callback = function()
         if not JoinQueueRF then
@@ -1328,7 +1328,7 @@ FunctionsTab:CreateButton({
 })
 
 -- Leave Queue Button
-FunctionsTab:CreateButton({
+RivalsTab:CreateButton({
     Name = "Leave Queue",
     Callback = function()
         if not LeaveQueueRE then
